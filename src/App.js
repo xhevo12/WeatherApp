@@ -1,149 +1,72 @@
 import './App.css';
-import React, {Component} from 'react';
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      newItem: "",
-      list: []
-    };
-  }
+import React, { useState } from 'react';
 
-  //incorporating local storage 
-  componentDidMount() {
-    this.hydrateStateWithLocalStorage();
-
-    // add event listener to save state to localStorage
-    // when user leaves/refreshes the page
-    window.addEventListener(
-      "beforeunload",
-      this.saveStateToLocalStorage.bind(this)
-    );
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener(
-      "beforeunload",
-      this.saveStateToLocalStorage.bind(this)
-    );
-
-    // saves if component has a chance to unmount
-    this.saveStateToLocalStorage();
-  }
-
-  hydrateStateWithLocalStorage() {
-    // for all items in state
-    for (let key in this.state) {
-      // if the key exists in localStorage
-      if (localStorage.hasOwnProperty(key)) {
-        // get the key's value from localStorage
-        let value = localStorage.getItem(key);
-
-        // parse the localStorage string and setState
-        try {
-          value = JSON.parse(value);
-          this.setState({ [key]: value });
-        } catch (e) {
-          // handle empty string
-          this.setState({ [key]: value });
-        }
-      }
+const api = {
+  key: "66c2c259509d6b2414098867926dc745",
+  base: "https://api.openweathermap.org/data/2.5/"
+}
+function App() {
+  const [query, setQuery] = useState('');
+  const [weather, setWeather] = useState({});
+  const search = evt => {
+    if (evt.key === "Enter") {
+      fetch(`${api.base}weather?q=${query}&units=metric&APPID=${api.key}`)
+        .then(res => res.json())
+        .then(result => {
+          setWeather(result);
+          setQuery('');
+          //console.log(result);
+        });
     }
   }
-
-  saveStateToLocalStorage() {
-    // for every item in React state
-    for (let key in this.state) {
-      // save to localStorage
-      localStorage.setItem(key, JSON.stringify(this.state[key]));
-    }
+  const dateBuilder = (d) => {
+    let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    let days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let day = days[d.getDay()];
+    let date = d.getDate();
+    let month = months[d.getMonth()];
+    let year = d.getFullYear();
+    return `${day},${date},${month},${year}`
   }
-
-  updateInput(key, value) {
-    // update react state
-    this.setState({ [key]: value });
-  }
-
-  addItem() {
-    // create a new item with unique id
-    const newItem = {
-      id: 1 + Math.random(),
-      value: this.state.newItem.slice()
- 
-    };
-
-    // copy current list of items
-    const list = [...this.state.list];
-
-    // add the new item to the list
-    list.push(newItem);
-
-    // update state with new list, reset the new item input
-    this.setState({
-      list,
-      newItem: ""
-    });
-  }
-
-  deleteItem(id) {
-    // copy current list of items
-    const list = [...this.state.list];
-    // filter out the item being deleted
-    const updatedList = list.filter(item => item.id !== id);
-
-    this.setState({ list: updatedList });
-  }
-  
-  render() {
-    return (
-      <div>
-
-      <h1 className="app-title">MY LIST</h1>
-        
-        <div className="container">
-        <div
-          style={{
-            padding: 30,
-            textAlign: "left",
-            maxWidth: 500,
-            margin: "auto"
-          }}
-        >
-        Add your Note!
-          <br />
+  return (
+    <div className={
+      (typeof weather.main != "undefined")
+      ? ((weather.main.temp > 16)
+        ? 'app warm' 
+        : 'app')
+        : 'app'}>
+      <main >
+        <div className="search-box" >
           <input
             type="text"
-            placeholder="Type item here"
-            value={this.state.newItem}
-            onChange={e => this.updateInput("newItem", e.target.value)}
+            className="search-bar"
+            placeholder="Search.."
+            onChange={e => setQuery(e.target.value)}
+            value={query}
+            onKeyPress={search}
           />
-          <button
-            className="add-btn btn-floating"
-            onClick={() => this.addItem()}
-            disabled={!this.state.newItem.length}
-          >
-            <i class="material-icons"> + </i>
-          </button>
-          <br /> <br />
-          <ul>
-            {this.state.list.map(item => {
-              return (
-                <li key={item.id}>
-                  {item.value}
-                  <button className="btn btn-floating" onClick={() => this.deleteItem(item.id)}>
-                    <i class="material-icons">x</i>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
         </div>
-      </div>
-      </div>
-    );
-  }
- 
+        {(typeof weather.main != "undefined") ? (
+          <div>
+            <div className="location-box">
+              <div className="location">{weather.name},{weather.sys.country}</div>
+              <div className="date">{dateBuilder(new Date())}</div>
+            </div>
+            <div className="weather-box">
+              <div className="temp">
+                {Math.round(weather.main.temp)}°C
+        </div>
+              <div className="weather">
+                {weather.weather[0].main}
+              </div>
+            </div>
+          </div>
+        ) : ('')}
+
+      </main>
+    </div>
+
+  );
+
 }
-
-
 export default App;
